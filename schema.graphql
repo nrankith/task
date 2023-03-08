@@ -1,0 +1,26 @@
+type Animal {
+  animal_name: String!
+  class_type: String!
+  hair: String
+  feathers: String
+  eggs: String
+  milk: String
+  airborne: String
+  aquatic: String
+  predator: String
+  toothed: String
+  backbone: String
+  breathes: String
+  venomous: String
+  fins: String
+  legs: String
+  tail: String
+  domestic: String
+  catsize: String
+}
+
+type Query {
+  animalsByClass(class_type: String!): [Animal!]!
+  animalsByTrait(trait: String!): [Animal!]!
+}
+

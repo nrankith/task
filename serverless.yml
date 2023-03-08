@@ -1,0 +1,71 @@
+service: GraphQl
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: ap-south-1
+  memorySize: 512
+  timeout: 30
+  stage: ${self:custom.myStage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource: arn:aws:s3:::my-animal-bucket/*
+
+plugins:
+  - serverless-appsync-plugin
+
+custom:
+  defaultStage: dev
+  myStage: ${opt:stage,self:custom.defaultStage}
+  appSync:
+    name: "animalsApi"
+    schema:
+      - "schema.graphql"
+    authenticationType: API_KEY
+    mappingTemplates:
+      - type: Query
+        request: false
+        response: false
+        dataSource: 'Lambda_Data_Source'
+        field: getAnimals
+    dataSources:
+      - type: AWS_LAMBDA
+        name: 'Lambda_Data_Source'
+        description: 'Lambda DataSource'
+        config:
+          lambdaFunctionArn: PUT LAMBDA ARN HERE
+
+functions:
+
+  loadDataToDB:
+    handler: handler.loadDataToDB
+    description: "Lambda that gets triggered when a file is uploaded to s3"
+    events:
+      - s3:
+          bucket: bucket name goes here
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix:  bucket name/folder name/
+            - suffix: .csv
+          existing: true
+          forceDeploy: true
+
+  getAnimals:
+    logRetentionInDays: ${self:custom.myEnvironment.RETENTION.${self:custom.myStage}}
+    handler: handler.getAnimals
+    events:
+      - appsync:
+          name: animalsApi
+          dataSourceName: AnimalLambda
+          type: "Query"
+          field: "animalsByClass"
+      - appsync:
+          name: animalsApi
+          dataSourceName: AnimalLambda
+          type: "Query"
+          field: "animalsByTrait"
+       
